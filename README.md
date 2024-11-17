@@ -1,7 +1,7 @@
 # spring-security-6.3.4-project
 
 ## Descripción
-Proyecto vacío con Spring Security configurado.
+Sistema de autenticación y autorización basado en Spring Security con JWT para proteger las rutas de la API. Utiliza JPA para la persistencia de datos y MySQL como base de datos relacional. Incluye manejo de roles para restringir accesos y endpoints para registro, login y gestión de usuarios. 
 
 ## Dependencias
 
@@ -36,7 +36,7 @@ Proyecto vacío con Spring Security configurado.
 
 ```
 ## Base de datos
-<p>Creamos una base de datos, dentro de esta base de datos cremoa una tabla llamada: <strong>Users</strong></p>
+Creamos una base de datos, dentro de esta base de datos cremos una tabla llamada: <strong>Users</strong>
 
 ```SQL
 CREATE TABLE users (
@@ -49,10 +49,63 @@ CREATE TABLE users (
 
 ```
 
-<p>Insertamos dos usuarios en la tabla verificando que el campo <strong>PASSWORD</strong> tenga una contraseña encriptada. <small><a target="_blank" href="https://bcrypt-generator.com/">Pagina para encriptar</a></small></p>
+Insertamos dos usuarios en la tabla verificando que el campo <strong>PASSWORD</strong> tenga una contraseña encriptada.
+
+[Pagina para encriptar contraseñas](https://bcrypt-generator.com/)
 
 ```SQL
 INSERT INTO users (nombre, email, password, rol_user) VALUES 
 ('Admin User', 'admin@example.com', 'password', 'admin'), /* pass: admin */
 ('Regular User', 'user@example.com', 'password', 'user'); /* pass: user */
+```
+
+## Clase de configuración de Spring Security
+El archivo de configuración principal se encuentra en:
+
+`security/config/SecurityConfig.java`
+
+Este archivo define las configuraciones de seguridad, como los filtros, las políticas de acceso y la integración con JWT.
+
+La clase `SecurityConfig` está anotada con `@Configuration`, lo que indica que es una clase de configuración para Spring. Contiene un método con la anotación `@Bean` que registra un `SecurityFilterChain`. Este filtro es esencial para manejar las configuraciones de seguridad en tu aplicación.
+
+[Documentacion Username/Password Autentication](https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/index.html#servlet-authentication-unpwd)
+
+
+```JAVA
+@Configuration // Marca esta clase como una clase de configuración para Spring.
+public class SecurityConfig {
+
+    @Bean // Declara que este método crea un bean administrado por Spring
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // Aquí puedes agregar las configuraciones de seguridad
+        return http.build();
+    }
+}
+```
+
+> [!NOTE]
+> - Basic Authenticacion Filter: Valida si el usr y pw son correctos o no
+> - Authentcation Manager: Coordinador que valida el tipo de autenticación si es (usr/pw, Autho0, LDAP…)
+> - Authentication Provider: Es capaz de validar la autenticación de usr/pw por el método DaoAuthenticationProvider.
+> - User Details Service: En este punto se valida si la contraseña del usuario corresponde a la que se recibió a través de la petición.
+
+Desabilitamos la protección CSRF porque usaremos sesiones sin estado `STATELESS`
+Autorizamos las peticiones HTTP
+
+```JAVA
+@Configuration
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable()) // desabilitamos la protección csrf
+
+                // Configuración de autorizaciones para las solicitudes HTTP
+                .authorizeHttpRequests((authorize) -> authorize
+                        .anyRequest().authenticated() // todas las rutas necesitan autenticación
+                )
+        return http.build();
+    }
+}
 ```
