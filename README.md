@@ -109,3 +109,82 @@ public class SecurityConfig {
     }
 }
 ```
+
+## Cors Configuration
+
+```JAVA
+@Configuration
+public class CorsConfig {
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration corsConfiguration = new CorsConfiguration();
+
+        corsConfiguration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
+        corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
+        corsConfiguration.setAllowedHeaders(Arrays.asList("*"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfiguration);
+
+        return source;
+    }
+}
+```
+
+## Aplicando reglas de autorización a las rutas (Request Matchers)
+`Request Matchers` nos permite gestionar los permisos de peticiones `GET POST PUT DELETE` en rutas especificas o generales
+
+Ejemplos de uso: 
+- `.permitAll()`
+- `.hasRole("ROLE")`
+- `.hasAnyRole("ROLE1", "ROLE2")`
+- `.hasAuthotity("PRIVILEGIOS")` Se usa al implementar `UserDetails` a la clase `Usuarios`
+- `.denyAll()` Denegar todas las peticiones a una ruta en especifico ya sea `GET POST PUT DELETE`
+
+```JAVA
+@Configuration
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable()) // desabilitamos la protección csrf
+
+                // Configuración de autorizaciones para las solicitudes HTTP
+                .authorizeHttpRequests((authorize) -> authorize
+                        .requestMatchers(HttpMethod.GET, "/home").permitAll() // permitimos las peticiones get a la ruta home
+                        .requestMatchers(HttpMethod.POST, "/admin/home").hasAuthority("admin") // permitimos las peticiones a administradores
+                        .requestMatchers(HttpMethod.POST, "/login").permitAll() // permitimos las peticiones post a login
+                        .anyRequest().authenticated() // todas las rutas necesitan autenticación
+                )
+        return http.build();
+    }
+}
+```
+
+## Crear usuarios en memorio (Opcional)
+
+```JAVA
+@Bean
+public InMemoryUserDetailsManager userDetailsManager() {
+    return new InMemoryUserDetailsManager(
+            User.withUsername("admin")
+                    .password(passwordEncoder().encode("admin"))
+                    .roles("ADMIN")
+                    .build()
+    );
+}
+```
+
+## Password Encoder
+
+
+```JAVA
+@Bean
+public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+}
+```
+
+
+
