@@ -1,8 +1,42 @@
 # spring-security-6.3.4-project
+
+## Descripción
 Proyecto vacío con Spring Security configurado.
-<hr/>
-<p>Instalar depencencias: spring security, spring web, jpa, driver mysql.</p>
-<h3>Base de datos</h3>
+
+## Dependencias
+
+```XML
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-jpa</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-security</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+<dependency>
+    <groupId>com.mysql</groupId>
+    <artifactId>mysql-connector-j</artifactId>
+    <scope>runtime</scope>
+</dependency>
+<dependency>
+    <groupId>org.projectlombok</groupId>
+    <artifactId>lombok</artifactId>
+    <scope>annotationProcessor</scope>
+</dependency>
+<dependency>
+    <groupId>com.auth0</groupId>
+    <artifactId>java-jwt</artifactId>
+    <version>4.2.1</version>
+</dependency>
+
+```
+## Base de datos
+<p>Creamos una base de datos, dentro de esta base de datos cremoa una tabla llamada: <strong>Users</strong></p>
 
 ```SQL
 CREATE TABLE users (
@@ -14,6 +48,8 @@ CREATE TABLE users (
 );
 
 ```
+
+<p>Insertamos dos usuarios en la tabla verificando que el campo <strong>PASSWORD</strong> tenga una contraseña encriptada. <small><a target="_blank" href="https://bcrypt-generator.com/">Pagina para encriptar</a></small></p>
 
 ```SQL
 INSERT INTO users (nombre, email, password, rol_user) VALUES 
