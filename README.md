@@ -353,3 +353,63 @@ public String generarToken(Usuario usuario) {
 }
 
 ```
+
+## Controlador de autenticacion
+
+Creamos el autentication manager en la clase de configuraci+on
+
+```JAVA
+@Bean
+public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration)
+        throws Exception {
+    return configuration.getAuthenticationManager();
+}
+
+```
+
+Configuramos el metodo de login donde usamos el autenticationManager y el metodo para generar el token
+
+```JAVA
+@Autowired
+private AuthenticationManager authenticationManager;
+
+@Autowired
+private JWTService tokenService;
+
+@PostMapping("/login")
+public ResponseEntity autenticarUsuario(@RequestBody LoginRequest datosAutenticacionUsuario) {
+    // Crear el token de autenticación
+    Authentication authToken = new UsernamePasswordAuthenticationToken(
+            datosAutenticacionUsuario.username(),
+            datosAutenticacionUsuario.password()
+    );
+
+    // Autenticar al usuario
+    var usuarioAutenticado = authenticationManager.authenticate(authToken);
+
+    // Obtener el objeto SecurityUser
+    SecurityUser securityUser  = (SecurityUser ) usuarioAutenticado.getPrincipal();
+
+    // Obtener el objeto Usuario desde SecurityUser
+    Usuario usuario = securityUser.getUser(); // Obtén el objeto Usuario
+
+    // Generar el token JWT
+    var JWTtoken = tokenService.generarToken(usuario);
+
+    // Retornar el token JWT
+    return ResponseEntity.ok(new DatosJWTToken(JWTtoken));
+}
+
+```
+
+Permitimos las peticiones post a login en el filterChain `.requestMatchers(HttpMethod.POST, "/login").permitAll()`
+
+filtro jwt
+
+inyectar el filtro a la clase de configuracion 
+
+agregamos en el filterchain `.addFilterBefore(jwtAutenticationFilter, UsernamePasswordAuthenticationFilter.class);`
+
+agregamos sesionagement stateless
+
+
