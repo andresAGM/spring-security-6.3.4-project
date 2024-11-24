@@ -162,7 +162,10 @@ public class SecurityConfig {
 }
 ```
 
-## Crear usuarios en memorio (Opcional)
+## Agregamos  `stateless`
+Le decimos a spring security que tipo de sesion va a manejar `.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))`
+
+## Crear usuarios en memoria (Opcional)
 
 ```JAVA
 @Bean
@@ -313,6 +316,28 @@ public UserDetails loadUserByUsername(String username) throws UsernameNotFoundEx
 }
 ```
 
+## creamos el provider
+
+```java
+@Bean 
+public AuthenticationProvider authenticationProvider() {
+   // Creamos una implementación de AuthenticationProvider que utiliza una base de datos
+   // DaoAuthenticationProvider es la implementación más común para autenticar contra una BD
+   DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+   
+   // Establecemos el servicio que se encargará de cargar los datos del usuario
+   // Este servicio debe implementar UserDetailsService y tener el método loadUserByUsername
+   provider.setUserDetailsService(autenticationService);
+   
+   // Establecemos el codificador de contraseñas que se usará para verificar las contraseñas
+   // Este encoder se usa para comparar la contraseña ingresada con la almacenada en BD
+   provider.setPasswordEncoder(passwordEncoder());
+   
+   // Retornamos el provider configurado para que Spring Security lo utilice
+   return provider;
+}
+```
+
 ## Controlar metodos con Method Security
 
 En nuestra clase de configuracion agregamos `@EnableMethosSecurity`, y a cada metodo en nuestro controlador le agregamos `@Secured("ROLE_ADMIN")` para las rutas que solo pueden acceder los administradores.
@@ -404,12 +429,55 @@ public ResponseEntity autenticarUsuario(@RequestBody LoginRequest datosAutentica
 
 Permitimos las peticiones post a login en el filterChain `.requestMatchers(HttpMethod.POST, "/login").permitAll()`
 
-filtro jwt
+## Filtro jwt
 
-inyectar el filtro a la clase de configuracion 
+Importamos el servicio jwt, el repositorio del usuario y creamos dos variables para guardar la información del usuario
+```java
+ @Autowired
+    private JWTService jwtService;
+
+    @Autowired
+    private usuarioRepository usuarioRepository;
+
+    String username = null;
+    String token = null;
+```
+
+```java
+@Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        // Extraemos el header "Authorization" de la petición
+       // Este header debe contener el token JWT en formato "Bearer <token>"
+        String authHeader = request.getHeader("Authorization");
+        // Verificamos que:
+        // - El header existe (no es null)
+        // - Empieza con "Bearer " (es el formato correcto)
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            // Extraemos el token quitando "Bearer "
+            token = authHeader.substring(7);
+            // Extraemos el username/email del token usando nuestro servicio JWT
+            username = jwtService.getSubject(token);
+
+            if (username != null) {
+                // Token valido, buscamos los datos completos del usuario en la base de datos
+                var usuario = usuarioRepository.findByEmail(username);
+                // Creamos un objeto de autenticación de Spring Security
+                var authentication = new UsernamePasswordAuthenticationToken(usuario, null,
+                        usuario.getAuthorities()); // Forzamos un inicio de sesion
+                // Establecemos la autenticación en el contexto de seguridad
+                // Esto indica a Spring Security que el usuario está autenticado
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        }
+        // Continuamos con el siguiente filtro en la cadena
+        filterChain.doFilter(request, response);
+    }
+```
+
+
+## Inyectar el filtro a la clase de configuracion 
 
 agregamos en el filterchain `.addFilterBefore(jwtAutenticationFilter, UsernamePasswordAuthenticationFilter.class);`
 
-agregamos sesionagement stateless
 
 
